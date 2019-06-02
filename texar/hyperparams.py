@@ -17,12 +17,9 @@ Hyperparameter manager
 
 import copy
 import json
-from typing import Any, Dict, ItemsView, Iterator, KeysView, \
-    Optional, Tuple, Union
+from typing import Any, Dict, ItemsView, Iterator, KeysView, Optional, Tuple, Union
 
-__all__ = [
-    'HParams'
-]
+__all__ = ["HParams"]
 
 
 def _type_name(value):
@@ -147,22 +144,28 @@ class HParams:
     # value and :attr:`"kwargs"` is missing in :attr:`hparams`, \
     # :attr:`"kwargs"` is set to an empty dictionary.
 
-    def __init__(self, hparams: Optional[Union['HParams', Dict[str, Any]]],
-                 default_hparams: Optional[Dict[str, Any]],
-                 allow_new_hparam: bool = False):
+    def __init__(
+        self,
+        hparams: Optional[Union["HParams", Dict[str, Any]]],
+        default_hparams: Optional[Dict[str, Any]],
+        allow_new_hparam: bool = False,
+    ):
         if isinstance(hparams, HParams):
             hparams = hparams.todict()
         if default_hparams is not None:
-            parsed_hparams = self._parse(
-                hparams, default_hparams, allow_new_hparam)
+            parsed_hparams = self._parse(hparams, default_hparams, allow_new_hparam)
         else:
             parsed_hparams = self._parse(hparams, hparams)
-        super(HParams, self).__setattr__('_hparams', parsed_hparams)
+        super(HParams, self).__setattr__("_hparams", parsed_hparams)
 
     @staticmethod
-    def _parse(hparams: Optional[Dict[str, Any]],  # noqa: E501 pylint: disable=too-many-branches, too-many-statements
-               default_hparams: Optional[Dict[str, Any]],
-               allow_new_hparam: bool = False):
+    def _parse(
+        hparams: Optional[
+            Dict[str, Any]
+        ],  # noqa: E501 pylint: disable=too-many-branches, too-many-statements
+        default_hparams: Optional[Dict[str, Any]],
+        allow_new_hparam: bool = False,
+    ):
         r"""Parses hyperparameters.
 
         Args:
@@ -191,13 +194,16 @@ class HParams:
             return HParams._parse(default_hparams, default_hparams)
 
         if default_hparams is None:
-            raise ValueError("`default_hparams` cannot be `None` if `hparams` "
-                             "is not `None`.")
-        no_typecheck_names = default_hparams.get('@no_typecheck', [])
+            raise ValueError(
+                "`default_hparams` cannot be `None` if `hparams` " "is not `None`."
+            )
+        no_typecheck_names = default_hparams.get("@no_typecheck", [])
 
         if "kwargs" in default_hparams and "type" not in default_hparams:
-            raise ValueError("Ill-defined hyperparameter structure: 'kwargs' "
-                             "must accompany with 'type'.")
+            raise ValueError(
+                "Ill-defined hyperparameter structure: 'kwargs' "
+                "must accompany with 'type'."
+            )
 
         parsed_hparams = copy.deepcopy(default_hparams)
 
@@ -205,8 +211,11 @@ class HParams:
         # in `hparams`.
         for name, value in default_hparams.items():
             if name not in hparams and isinstance(value, dict):
-                if name == 'kwargs' and 'type' in hparams and \
-                        hparams['type'] != default_hparams['type']:
+                if (
+                    name == "kwargs"
+                    and "type" in hparams
+                    and hparams["type"] != default_hparams["type"]
+                ):
                     # Set params named "kwargs" to empty dictionary if "type"
                     # takes value other than default.
                     parsed_hparams[name] = HParams({}, {})
@@ -223,11 +232,11 @@ class HParams:
                     raise ValueError(
                         "Unknown hyperparameter: %s. Only hyperparameters "
                         "named 'kwargs' hyperparameters can contain new "
-                        "entries undefined in default hyperparameters." % name)
+                        "entries undefined in default hyperparameters." % name
+                    )
 
             if value is None:
-                parsed_hparams[name] = \
-                    HParams._parse_value(parsed_hparams[name])
+                parsed_hparams[name] = HParams._parse_value(parsed_hparams[name])
 
             default_value = default_hparams[name]
             if default_value is None:
@@ -236,14 +245,15 @@ class HParams:
 
             # Parse recursively for params of type dictionary.
             if isinstance(value, dict):
-                if name not in no_typecheck_names \
-                        and not isinstance(default_value, dict):
+                if name not in no_typecheck_names and not isinstance(
+                    default_value, dict
+                ):
                     raise ValueError(
-                        "Hyperparameter '%s' must have type %s, got %s" %
-                        (name, _type_name(default_value), _type_name(value)))
+                        "Hyperparameter '%s' must have type %s, got %s"
+                        % (name, _type_name(default_value), _type_name(value))
+                    )
                 if name == "kwargs":
-                    if "type" in hparams and \
-                            hparams["type"] != default_hparams['type']:
+                    if "type" in hparams and hparams["type"] != default_hparams["type"]:
                         # Leave "kwargs" as-is if "type" takes value
                         # other than default.
                         parsed_hparams[name] = HParams(value, value)
@@ -251,17 +261,19 @@ class HParams:
                         # Allow new hyperparameters if "type" takes default
                         # value
                         parsed_hparams[name] = HParams(
-                            value, default_value, allow_new_hparam=True)
+                            value, default_value, allow_new_hparam=True
+                        )
                 elif name in no_typecheck_names:
                     parsed_hparams[name] = HParams(value, value)
                 else:
                     parsed_hparams[name] = HParams(
-                        value, default_value, allow_new_hparam)
+                        value, default_value, allow_new_hparam
+                    )
                 continue
 
             # Do not type-check hyperparameter named "type" and accompanied
             # with "kwargs"
-            if name == 'type' and 'kwargs' in default_hparams:
+            if name == "type" and "kwargs" in default_hparams:
                 parsed_hparams[name] = value
                 continue
 
@@ -276,8 +288,9 @@ class HParams:
                     parsed_hparams[name] = type(default_value)(value)
                 except TypeError:
                     raise ValueError(
-                        "Hyperparameter '%s' must have type %s, got %s" %
-                        (name, _type_name(default_value), _type_name(value)))
+                        "Hyperparameter '%s' must have type %s, got %s"
+                        % (name, _type_name(default_value), _type_name(value))
+                    )
 
         return parsed_hparams
 
@@ -291,8 +304,8 @@ class HParams:
     def __getattr__(self, name: str) -> Any:
         r"""Retrieves the value of the hyperparameter.
         """
-        if name == '_hparams':
-            return super(HParams, self).__getattribute__('_hparams')
+        if name == "_hparams":
+            return super(HParams, self).__getattribute__("_hparams")
         if name not in self._hparams:
             # Raise AttributeError to allow copy.deepcopy, etc
             raise AttributeError("Unknown hyperparameter: %s" % name)
@@ -310,7 +323,8 @@ class HParams:
             raise ValueError(
                 "Unknown hyperparameter: %s. Only the `kwargs` "
                 "hyperparameters can contain new entries undefined "
-                "in default hyperparameters." % name)
+                "in default hyperparameters." % name
+            )
         self._hparams[name] = self._parse_value(value, name)
 
     def items(self) -> ItemsView[str, Any]:
