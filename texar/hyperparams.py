@@ -153,7 +153,9 @@ class HParams:
         if isinstance(hparams, HParams):
             hparams = hparams.todict()
         if default_hparams is not None:
-            parsed_hparams = self._parse(hparams, default_hparams, allow_new_hparam)
+            parsed_hparams = self._parse(hparams,
+                                         default_hparams,
+                                         allow_new_hparam)
         else:
             parsed_hparams = self._parse(hparams, hparams)
         super(HParams, self).__setattr__("_hparams", parsed_hparams)
@@ -195,7 +197,8 @@ class HParams:
 
         if default_hparams is None:
             raise ValueError(
-                "`default_hparams` cannot be `None` if `hparams` " "is not `None`."
+                "`default_hparams` cannot be `None` if `hparams` "
+                "is not `None`."
             )
         no_typecheck_names = default_hparams.get("@no_typecheck", [])
 
@@ -236,7 +239,8 @@ class HParams:
                     )
 
             if value is None:
-                parsed_hparams[name] = HParams._parse_value(parsed_hparams[name])
+                parsed_hparams[name] = HParams._parse_value(
+                    parsed_hparams[name])
 
             default_value = default_hparams[name]
             if default_value is None:
@@ -253,7 +257,8 @@ class HParams:
                         % (name, _type_name(default_value), _type_name(value))
                     )
                 if name == "kwargs":
-                    if "type" in hparams and hparams["type"] != default_hparams["type"]:
+                    if "type" in hparams and hparams["type"] != \
+                            default_hparams["type"]:
                         # Leave "kwargs" as-is if "type" takes value
                         # other than default.
                         parsed_hparams[name] = HParams(value, value)
