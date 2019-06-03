@@ -28,10 +28,7 @@ import os
 import importlib
 import yaml
 
-import tensorflow as tf
-from tensorflow import gfile
-
-as_text = tf.compat.as_text
+as_text = lambda x: x
 
 __all__ = [
     "load_config_single",
@@ -40,27 +37,6 @@ __all__ = [
     "maybe_create_dir",
     "get_files"
 ]
-
-#def get_tf_logger(fname,
-#                  verbosity=tf.logging.INFO,
-#                  to_stdio=False,
-#                  stdio_verbosity=None):
-#    """Creates TF logger that allows to specify log filename and whether to
-#    print to stdio at the same time.
-#
-#    Args:
-#        fname (str): The log filename.
-#        verbosity: The threshold for what messages will be logged. Default is
-#            `INFO`. Other options include `DEBUG`, `ERROR`, `FATAL`, and `WARN`.
-#            See :tf_main:`tf.logging <logging>`.
-#        to_stdio (bool): Whether to print messages to stdio at the same time.
-#        stido_verbosity (optional): The verbosity level when printing to stdio.
-#            If `None` (default), the level is set to be the same as
-#            :attr:`verbosity`. Ignored if :attr:`to_stdio` is False.
-#
-#    Returns:
-#        The TF logger.
-#    """
 
 def _load_config_python(fname):
     config = {}
@@ -72,10 +48,12 @@ def _load_config_python(fname):
 
     return config
 
+
 def _load_config_yaml(fname):
     with gfile.GFile(fname) as config_file:
         config = yaml.load(config_file)
     return config
+
 
 def load_config_single(fname, config=None):
     """Loads config from a single file.
