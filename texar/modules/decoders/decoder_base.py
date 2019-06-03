@@ -63,6 +63,8 @@ def _make_output_layer(layer: Optional[Union[nn.Module, torch.Tensor]],
         layer = layer.t().contiguous()
         if not isinstance(layer, nn.Parameter):
             layer = nn.Parameter(layer, requires_grad=False)
+            print('the layer passed is not parameter!!')
+            exit()
         output_layer.weight = layer
     elif layer is identity:
         output_layer = identity  # type: ignore

@@ -40,6 +40,9 @@ class Transformer(ModuleBase):
         # As the decoder masks out <PAD>'s embedding, which in effect means
         # <PAD> has all-zero embedding, so here we explicitly set <PAD>'s
         # embedding to all-zero.
+        print('type:{}'.format(type(src_word_embedder.embedding)))
+        print('sliced type:{}'.format(type(src_word_embedder.embedding[1:, :])))
+        print(src_word_embedder.embedding[1:, :].grad)
         tgt_embedding = torch.cat(
             [
                 torch.zeros((1, src_word_embedder.dim), dtype=torch.float),
@@ -49,7 +52,7 @@ class Transformer(ModuleBase):
         )
         tgt_word_embedder = tx.modules.WordEmbedder(tgt_embedding)
         _output_w = torch.transpose(tgt_word_embedder.embedding, 1, 0)
-
+        print('type:{}'.format(type(_output_w)))
         decoder = TransformerDecoder(
             vocab_size=self.vocab_size,
             output_layer=_output_w,
@@ -107,8 +110,7 @@ class Transformer(ModuleBase):
         src_seq_len = torch.full(
             [batch_size], encoder_input.size()[1], dtype=torch.int32
         )
-        if torch.cuda.is_available():
-            src_seq_len = src_seq_len.cuda()
+        src_seq_len = src_seq_len.to(device=encoder_input.device)
 
         src_pos_embeds = self.submodules["pos_embedder"](
             sequence_length=src_seq_len
@@ -132,8 +134,7 @@ class Transformer(ModuleBase):
             tgt_seq_len = torch.full(
                 [batch_size], decoder_input.size()[1], dtype=torch.int32
             )
-            if torch.cuda.is_available():
-                tgt_seq_len = tgt_seq_len.cuda()
+            tgt_seq_len = tgt_seq_len.to(device=decoder_input.device)
 
             tgt_pos_embeds = self.submodules["pos_embedder"](
                 sequence_length=tgt_seq_len
@@ -148,8 +149,8 @@ class Transformer(ModuleBase):
                 inputs=tgt_input_embedding,
                 decoding_strategy="train_greedy",
             )
-            label_lengths = (labels != 0).long().sum(dim=1)
             labels = labels.to(device=outputs.logits.device)
+            label_lengths = (labels != 0).long().sum(dim=1)
             label_lengths = label_lengths.to(device=outputs.logits.device)
             is_target = (labels != 0).float()
             mle_loss = self.smoothed_loss_func(
@@ -235,5 +236,6 @@ class LabelSmoothingLoss(nn.Module):
             model_prob.reshape(ori_shapes[0]),
         )
         return sequence_softmax_cross_entropy(
-            labels=model_prob, logits=output, sequence_length=label_lengths
+            labels=model_prob, logits=output, sequence_length=label_lengths,
+            average_across_batch=False, sum_over_timesteps=False,
         )
