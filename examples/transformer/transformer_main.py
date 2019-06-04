@@ -72,8 +72,6 @@ def main():
         id2w = pickle.load(f)
     vocab_size = len(id2w)
 
-    beam_width = config_model.beam_width
-
     # Create logging
     tx.utils.maybe_create_dir(args.model_dir)
     logging_file = os.path.join(args.model_dir, 'logging.txt')
@@ -118,7 +116,7 @@ def main():
             predictions = model(
                 encoder_input=x_block,
                 is_train_mode=False,
-                beam_width=beam_width,
+                beam_width=getattr(config_model, 'beam_width')
             )
             beam_search_ids = predictions["sample_id"][:, :, 0]
 
