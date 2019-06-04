@@ -154,7 +154,7 @@ class Transformer(ModuleBase):
                     y
                 )
 
-            predictions = self.modules["decoder"](
+            predictions = self.submodules["decoder"](
                 memory=encoder_output,
                 memory_sequence_length=encoder_input_length,
                 beam_width=beam_width,

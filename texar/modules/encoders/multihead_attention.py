@@ -85,6 +85,7 @@ class MultiheadAttentionEncoder(EncoderBase):
             assert initialize is not None
             for name, param in self.named_parameters():
                 if name.split('.')[-1] == 'weight':
+                    print('name:{}'.format(name))
                     initialize(param)
 
     @staticmethod
