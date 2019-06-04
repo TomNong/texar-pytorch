@@ -113,16 +113,9 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
         self.poswise_networks = nn.ModuleList()
         self.poswise_layer_norm = nn.ModuleList()
 
-        initialize = lambda x: None
-        if self._hparams.initializer:
-            initialize = layers.get_initializer(self._hparams.initializer)
-
         for i in range(self._hparams.num_blocks):
             attn_module = MultiheadAttentionEncoder(
                 self._input_size, self._hparams.multihead_attention)
-            for param in attn_module.parameters():
-                if len(param.size()) == 2:
-                    initialize(param)
             if self._hparams.dim != attn_module.output_size:
                 raise ValueError("The output dimension of "
                                  "MultiheadEncoder should be equal "
@@ -132,9 +125,6 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
 
             attn_module = MultiheadAttentionEncoder(
                 self._input_size, self._hparams.multihead_attention)
-            for param in attn_module.parameters():
-                if len(param.size()) == 2:
-                    initialize(param)
             if self._hparams.dim != attn_module.output_size:
                 raise ValueError("The output dimension of "
                                  "MultiheadEncoder should be equal "
@@ -144,9 +134,6 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
 
             poswise_network = FeedForwardNetwork(
                 hparams=self._hparams.poswise_feedforward)
-            for param in poswise_network.parameters():
-                if len(param.size()) == 2:
-                    initialize(param)
             if (poswise_network._hparams.layers[-1]['kwargs']['out_features']
                     != self._hparams.dim):
                 raise ValueError("The output dimension of "
@@ -158,7 +145,13 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
         self.final_layer_norm = nn.LayerNorm(self._input_size)
         self.embed_dropout = nn.Dropout(self._hparams.embedding_dropout)
         self.residual_dropout = nn.Dropout(self._hparams.residual_dropout)
-
+        if self._hparams.initializer:
+            initialize = layers.get_initializer(self._hparams.initializer)
+            assert initialize is not None
+            # don't need to re-initialze the LayerNorm
+            for name, param in self.named_parameters():
+                if name.split('.')[-1] == 'weight':
+                    initialize(param)
     @staticmethod
     def default_hparams():
         r"""Returns a dictionary of hyperparameters with default values.
