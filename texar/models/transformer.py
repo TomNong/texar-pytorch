@@ -148,7 +148,7 @@ class Transformer(ModuleBase):
                 start_tokens = start_tokens.cuda()
 
             def _embedding_fn(x, y):
-                print('embedding_fn input:{} {}'.format(x, y))
+                print('step:{}'.format(y))
                 return self.submodules["word_embedder"](
                     x
                 ) * self.config_model.hidden_dim ** 0.5 + self.submodules[
