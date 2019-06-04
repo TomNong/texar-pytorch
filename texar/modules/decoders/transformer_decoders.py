@@ -549,7 +549,6 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
                 kwargs.update(decoding_strategy=decoding_strategy)
                 if context is not None:
                     kwargs.update(start_tokens=context[:, 0])
-                print('kwargs:{}'.format(kwargs))
                 helper = self._create_or_get_helper(infer_mode, **kwargs)
             assert isinstance(helper, EmbeddingHelper)
 
