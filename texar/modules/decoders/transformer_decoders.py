@@ -543,13 +543,12 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
 
         self._state_max_decoding_length = max_decoding_length
 
-        if beam_width is None:  # Inference-like decoding
+        if beam_width is None or beam_width == 1:  # Inference-like decoding
             # Prepare helper
             if helper is None:
                 kwargs.update(decoding_strategy=decoding_strategy)
                 if context is not None:
                     kwargs.update(start_tokens=context[:, 0])
-                print('kwargs:{}'.format(kwargs))
                 helper = self._create_or_get_helper(infer_mode, **kwargs)
             assert isinstance(helper, EmbeddingHelper)
 
