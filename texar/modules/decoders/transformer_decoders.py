@@ -113,18 +113,16 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
         self.poswise_networks = nn.ModuleList()
         self.poswise_layer_norm = nn.ModuleList()
 
+        initialize = lambda x: None
         if self._hparams.initializer:
-            # TODO: This might be different to what TensorFlow does
             initialize = layers.get_initializer(self._hparams.initializer)
+
         for i in range(self._hparams.num_blocks):
             attn_module = MultiheadAttentionEncoder(
                 self._input_size, self._hparams.multihead_attention)
             for param in attn_module.parameters():
-                 # print('before initialize:{}'.format(param))
-                 if len(param.size()) == 2:
-                     initialize(param)
-                 # print('after initialize:{}'.format(param))
-                 # print('attn params:{}'.format(param.shape))
+                if len(param.size()) == 2:
+                    initialize(param)
             if self._hparams.dim != attn_module.output_size:
                 raise ValueError("The output dimension of "
                                  "MultiheadEncoder should be equal "
@@ -135,11 +133,8 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
             attn_module = MultiheadAttentionEncoder(
                 self._input_size, self._hparams.multihead_attention)
             for param in attn_module.parameters():
-                 # print('before initialize:{}'.format(param))
-                 if len(param.size()) == 2:
-                     initialize(param)
-                 # print('after initialize:{}'.format(param))
-                 # print('attn params:{}'.format(param.shape))
+                if len(param.size()) == 2:
+                    initialize(param)
             if self._hparams.dim != attn_module.output_size:
                 raise ValueError("The output dimension of "
                                  "MultiheadEncoder should be equal "
@@ -150,11 +145,8 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
             poswise_network = FeedForwardNetwork(
                 hparams=self._hparams.poswise_feedforward)
             for param in poswise_network.parameters():
-                 # print('before initialize:{}'.format(param))
-                 if len(param.size()) == 2:
-                     initialize(param)
-                 # print('after initialize:{}'.format(param))
-                 # print('attn params:{}'.format(param.shape))
+                if len(param.size()) == 2:
+                    initialize(param)
             if (poswise_network._hparams.layers[-1]['kwargs']['out_features']
                     != self._hparams.dim):
                 raise ValueError("The output dimension of "
