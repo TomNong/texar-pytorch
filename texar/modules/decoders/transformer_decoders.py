@@ -27,19 +27,20 @@ from texar.modules.decoders import Helper
 from texar.modules.decoders.decoder_base import DecoderBase, _make_output_layer
 from texar.modules.decoders.decoder_helpers import EmbeddingHelper
 from texar.modules.embedders import EmbedderBase
-from texar.modules.encoders.multihead_attention import \
-    Cache, MultiheadAttentionEncoder
-from texar.modules.encoders.transformer_encoder import \
-    default_transformer_poswise_net_hparams
+from texar.modules.encoders.multihead_attention import (
+    Cache,
+    MultiheadAttentionEncoder,
+)
+from texar.modules.encoders.transformer_encoder import (
+    default_transformer_poswise_net_hparams,
+)
+
 # from texar.utils import beam_search
 from texar.utils import get_instance, transformer_attentions as attn
 from texar.utils.shapes import mask_sequences
 from texar.utils.utils import sequence_mask
 
-__all__ = [
-    'TransformerDecoderOutput',
-    'TransformerDecoder',
-]
+__all__ = ["TransformerDecoderOutput", "TransformerDecoder"]
 
 
 class TransformerDecoderOutput(NamedTuple):
@@ -93,18 +94,27 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
     _state_context_sequence_length: Optional[torch.LongTensor]
     _state_cache: Cache
 
-    def __init__(self,
-                 vocab_size: Optional[int] = None,
-                 output_layer: Optional[Union[nn.Module, torch.Tensor]] = None,
-                 hparams: Optional[HParams] = None):
-        super().__init__(0, vocab_size,  # dummy value for input_size
-                         input_time_major=False,
-                         output_time_major=False, hparams=hparams)
+    def __init__(
+        self,
+        vocab_size: Optional[int] = None,
+        output_layer: Optional[Union[nn.Module, torch.Tensor]] = None,
+        hparams: Optional[HParams] = None,
+    ):
+        super().__init__(
+            0,
+            vocab_size,  # dummy value for input_size
+            input_time_major=False,
+            output_time_major=False,
+            hparams=hparams,
+        )
         self._input_size = self._hparams.dim
 
         self._output_layer, self._vocab_size = _make_output_layer(
-            output_layer, vocab_size, self._input_size,
-            self._hparams.output_layer_bias)
+            output_layer,
+            vocab_size,
+            self._input_size,
+            self._hparams.output_layer_bias,
+        )
 
         self.self_attns = nn.ModuleList()
         self.self_attn_layer_norm = nn.ModuleList()
@@ -115,30 +125,41 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
 
         for i in range(self._hparams.num_blocks):
             attn_module = MultiheadAttentionEncoder(
-                self._input_size, self._hparams.multihead_attention)
+                self._input_size, self._hparams.multihead_attention
+            )
             if self._hparams.dim != attn_module.output_size:
-                raise ValueError("The output dimension of "
-                                 "MultiheadEncoder should be equal "
-                                 "to the dim of TransformerDecoder")
+                raise ValueError(
+                    "The output dimension of "
+                    "MultiheadEncoder should be equal "
+                    "to the dim of TransformerDecoder"
+                )
             self.self_attns.append(attn_module)
             self.self_attn_layer_norm.append(nn.LayerNorm(self._input_size))
 
             attn_module = MultiheadAttentionEncoder(
-                self._input_size, self._hparams.multihead_attention)
+                self._input_size, self._hparams.multihead_attention
+            )
             if self._hparams.dim != attn_module.output_size:
-                raise ValueError("The output dimension of "
-                                 "MultiheadEncoder should be equal "
-                                 "to the dim of TransformerDecoder")
+                raise ValueError(
+                    "The output dimension of "
+                    "MultiheadEncoder should be equal "
+                    "to the dim of TransformerDecoder"
+                )
             self.enc_dec_attns.append(attn_module)
             self.end_dec_attn_layer_norm.append(nn.LayerNorm(self._input_size))
 
             poswise_network = FeedForwardNetwork(
-                hparams=self._hparams.poswise_feedforward)
-            if (poswise_network._hparams.layers[-1]['kwargs']['out_features']
-                    != self._hparams.dim):
-                raise ValueError("The output dimension of "
-                                 "FeedForwardNetwork should be equal "
-                                 "to the dim of TransformerDecoder")
+                hparams=self._hparams.poswise_feedforward
+            )
+            if (
+                poswise_network._hparams.layers[-1]["kwargs"]["out_features"]
+                != self._hparams.dim
+            ):
+                raise ValueError(
+                    "The output dimension of "
+                    "FeedForwardNetwork should be equal "
+                    "to the dim of TransformerDecoder"
+                )
             self.poswise_networks.append(poswise_network)
             self.poswise_layer_norm.append(nn.LayerNorm(self._input_size))
 
@@ -150,8 +171,9 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
             assert initialize is not None
             # don't need to re-initialze the LayerNorm
             for name, param in self.named_parameters():
-                if name.split('.')[-1] == 'weight':
+                if name.split(".")[-1] == "weight" and "layer_norm" not in name:
                     initialize(param)
+
     @staticmethod
     def default_hparams():
         r"""Returns a dictionary of hyperparameters with default values.
@@ -238,28 +260,29 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
         """
         dim = 512
         return {
-            'num_blocks': 6,
-            'dim': dim,
-            'embedding_tie': True,
-            'output_layer_bias': False,
-            'max_decoding_length': int(1e10),
-            'embedding_dropout': 0.1,
-            'residual_dropout': 0.1,
-            'poswise_feedforward': default_transformer_poswise_net_hparams(dim),
-            'multihead_attention': {
-                'name': 'multihead_attention',
-                'num_units': 512,
-                'num_heads': 8,
-                'dropout_rate': 0.1,
-                'output_dim': 512,
-                'use_bias': False,
+            "num_blocks": 6,
+            "dim": dim,
+            "embedding_tie": True,
+            "output_layer_bias": False,
+            "max_decoding_length": int(1e10),
+            "embedding_dropout": 0.1,
+            "residual_dropout": 0.1,
+            "poswise_feedforward": default_transformer_poswise_net_hparams(dim),
+            "multihead_attention": {
+                "name": "multihead_attention",
+                "num_units": 512,
+                "num_heads": 8,
+                "dropout_rate": 0.1,
+                "output_dim": 512,
+                "use_bias": False,
             },
-            'initializer': None,
-            'name': "transformer_decoder",
+            "initializer": None,
+            "name": "transformer_decoder",
         }
 
-    def _inputs_to_outputs(self, inputs: torch.Tensor,
-                           cache: Cache) -> Tuple[torch.Tensor, Cache]:
+    def _inputs_to_outputs(
+        self, inputs: torch.Tensor, cache: Cache
+    ) -> Tuple[torch.Tensor, Cache]:
         r"""Returns the outputs of one decoding step (for example,
         the predicted logits of the next token).
 
@@ -269,13 +292,15 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
         and updated cache.
         """
         outputs = self._self_attention_stack(
-            inputs.unsqueeze(1), memory=cache['memory'], cache=cache)
+            inputs.unsqueeze(1), memory=cache["memory"], cache=cache
+        )
         outputs = self._output_layer(outputs)
         outputs = outputs.squeeze(1)
         return outputs, cache
 
-    def _input_ids_to_outputs(self, input_ids: torch.LongTensor, step: int,
-                              cache: Cache) -> Tuple[torch.Tensor, Cache]:
+    def _input_ids_to_outputs(
+        self, input_ids: torch.LongTensor, step: int, cache: Cache
+    ) -> Tuple[torch.Tensor, Cache]:
         """The function is called in beam-search decoding.
 
         `inputs` should be of shape `[batch_size]`.
@@ -288,26 +313,28 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
         inputs = self.embedding(input_ids, times)
         return self._inputs_to_outputs(inputs, cache)
 
-    def forward(self,  # type: ignore
-                inputs: Optional[torch.Tensor] = None,
-                sequence_length: Optional[torch.LongTensor] = None,
-                memory: Optional[torch.Tensor] = None,
-                memory_sequence_length: Optional[torch.LongTensor] = None,
-                memory_attention_bias: Optional[torch.Tensor] = None,
-                context: Optional[torch.Tensor] = None,
-                context_sequence_length: Optional[torch.LongTensor] = None,
-                helper: Optional[Helper] = None,
-                decoding_strategy: str = 'train_greedy',
-                max_decoding_length: Optional[int] = None,
-                impute_finished: bool = False,
-                infer_mode: Optional[bool] = None,
-                beam_width: Optional[int] = None,
-                length_penalty: float = 0.,
-                **kwargs) \
-            -> Union[
-                TransformerDecoderOutput,
-                Tuple[TransformerDecoderOutput, torch.LongTensor],
-                Dict[str, torch.Tensor]]:
+    def forward(
+        self,  # type: ignore
+        inputs: Optional[torch.Tensor] = None,
+        sequence_length: Optional[torch.LongTensor] = None,
+        memory: Optional[torch.Tensor] = None,
+        memory_sequence_length: Optional[torch.LongTensor] = None,
+        memory_attention_bias: Optional[torch.Tensor] = None,
+        context: Optional[torch.Tensor] = None,
+        context_sequence_length: Optional[torch.LongTensor] = None,
+        helper: Optional[Helper] = None,
+        decoding_strategy: str = "train_greedy",
+        max_decoding_length: Optional[int] = None,
+        impute_finished: bool = False,
+        infer_mode: Optional[bool] = None,
+        beam_width: Optional[int] = None,
+        length_penalty: float = 0.0,
+        **kwargs
+    ) -> Union[
+        TransformerDecoderOutput,
+        Tuple[TransformerDecoderOutput, torch.LongTensor],
+        Dict[str, torch.Tensor],
+    ]:
         r"""Performs decoding.
 
         The interface is very similar to that of RNN decoders
@@ -456,20 +483,24 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
                 if memory_sequence_length is None:
                     raise ValueError(
                         "`memory_sequence_length` is required if "
-                        "`memory_attention_bias` is not given.")
+                        "`memory_attention_bias` is not given."
+                    )
 
                 enc_padding = 1 - sequence_mask(
-                    memory_sequence_length, memory.size(1),
-                    dtype=torch.float32)
+                    memory_sequence_length, memory.size(1), dtype=torch.float32
+                )
                 memory_attention_bias = attn.attention_bias_ignore_padding(
-                    enc_padding)
+                    enc_padding
+                )
 
         # record the context, which will be used in step function
         # for dynamic_decode
         if context is not None:
             if context_sequence_length is None:
-                raise ValueError("'context_sequence_length' must not be None"
-                                 "when 'context' is specified.")
+                raise ValueError(
+                    "'context_sequence_length' must not be None"
+                    "when 'context' is specified."
+                )
             self._state_context = context[:, 1:]
             self._state_context_sequence_length = context_sequence_length - 1
         else:
@@ -477,20 +508,30 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
             self._state_context_sequence_length = None
 
         # Faster code path for teacher-forcing training
-        if (helper is None and beam_width is None and
-                decoding_strategy == 'train_greedy'):
+        if (
+            helper is None
+            and beam_width is None
+            and decoding_strategy == "train_greedy"
+        ):
             if inputs is None:
-                raise ValueError("'input' must not be none "
-                                 "when using 'train_greedy' decoding strategy.")
+                raise ValueError(
+                    "'input' must not be none "
+                    "when using 'train_greedy' decoding strategy."
+                )
             if sequence_length is not None:
                 inputs = mask_sequences(inputs, sequence_length)
 
-            decoder_self_attention_bias = (
-                attn.attention_bias_lower_triangle(inputs.size(1)))
+            decoder_self_attention_bias = attn.attention_bias_lower_triangle(
+                inputs.size(1)
+            )
 
             decoder_output = self._self_attention_stack(
-                inputs, memory, decoder_self_attention_bias,
-                memory_attention_bias, cache=None)
+                inputs,
+                memory,
+                decoder_self_attention_bias,
+                memory_attention_bias,
+                cache=None,
+            )
             logits = self._output_layer(decoder_output)
             sample_id = torch.argmax(logits, dim=-1)
 
@@ -512,23 +553,33 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
             assert isinstance(helper, EmbeddingHelper)
 
             self._state_cache = self._init_cache(
-                memory, memory_attention_bias,
-                beam_search_decoding=False, batch_size=helper.batch_size)
+                memory,
+                memory_attention_bias,
+                beam_search_decoding=False,
+                batch_size=helper.batch_size,
+            )
             if context is not None:
                 assert self._state_context is not None
-                pad_length = \
-                    max_decoding_length - self._state_context.size(1)
+                pad_length = max_decoding_length - self._state_context.size(1)
                 if pad_length > 0:
-                    self._state_context = torch.cat((
-                        self._state_context,
-                        self._state_context.new_zeros(
-                            self._state_context.size(0), pad_length)
-                    ), dim=1)
+                    self._state_context = torch.cat(
+                        (
+                            self._state_context,
+                            self._state_context.new_zeros(
+                                self._state_context.size(0), pad_length
+                            ),
+                        ),
+                        dim=1,
+                    )
 
             outputs, cache, sequence_lengths = self.dynamic_decode(
-                helper, inputs=None, sequence_length=None,
-                initial_state=None, max_decoding_length=max_decoding_length,
-                impute_finished=impute_finished)
+                helper,
+                inputs=None,
+                sequence_length=None,
+                initial_state=None,
+                max_decoding_length=max_decoding_length,
+                impute_finished=impute_finished,
+            )
 
             if context is not None:
                 # Here the length of sample_id will be larger than that
@@ -539,10 +590,10 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
                 start_tokens = context[:, 0]
                 outputs = TransformerDecoderOutput(
                     logits=outputs.logits,
-                    sample_id=torch.cat([
-                        start_tokens.unsqueeze(1),
-                        outputs.sample_id
-                    ], dim=1))
+                    sample_id=torch.cat(
+                        [start_tokens.unsqueeze(1), outputs.sample_id], dim=1
+                    ),
+                )
                 sequence_lengths = sequence_lengths + 1
 
             return outputs, sequence_lengths
@@ -550,66 +601,72 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
         else:  # Beam-search decoding
             # Ignore `decoding_strategy` and # assume `helper` is not set.
             if helper is not None:
-                raise ValueError("Must not set 'beam_width' and 'helper' "
-                                 "simultaneously.")
+                raise ValueError(
+                    "Must not set 'beam_width' and 'helper' " "simultaneously."
+                )
             if context is not None:
                 start_tokens = context[:, 0]
             else:
-                if 'start_tokens' not in kwargs:
+                if "start_tokens" not in kwargs:
                     raise ValueError(
                         "'start_tokens' must be specified when using"
-                        "beam search decoding.")
-                start_tokens = kwargs['start_tokens']
+                        "beam search decoding."
+                    )
+                start_tokens = kwargs["start_tokens"]
             _batch_size = start_tokens.size(0)
             self._state_cache = self._init_cache(
-                memory, memory_attention_bias,
+                memory,
+                memory_attention_bias,
                 beam_search_decoding=True,
-                batch_size=_batch_size)
+                batch_size=_batch_size,
+            )
 
             # The output format is different when running beam search
             sample_id, log_prob = self._beam_decode(
                 start_tokens,
-                kwargs.get('end_token'),
+                kwargs.get("end_token"),
                 beam_width=beam_width,
                 length_penalty=length_penalty,
-                decode_length=max_decoding_length)
+                decode_length=max_decoding_length,
+            )
 
-            return {
-                'sample_id': sample_id,
-                'log_prob': log_prob
-            }
+            return {"sample_id": sample_id, "log_prob": log_prob}
 
     def _self_attention_stack(
-            self, inputs: torch.Tensor,
-            memory: Optional[torch.Tensor],
-            decoder_self_attention_bias: Optional[torch.Tensor] = None,
-            memory_attention_bias: Optional[torch.Tensor] = None,
-            cache: Optional[Cache] = None) -> torch.Tensor:
+        self,
+        inputs: torch.Tensor,
+        memory: Optional[torch.Tensor],
+        decoder_self_attention_bias: Optional[torch.Tensor] = None,
+        memory_attention_bias: Optional[torch.Tensor] = None,
+        cache: Optional[Cache] = None,
+    ) -> torch.Tensor:
         r"""Stacked multihead attention module.
         """
         inputs = self.embed_dropout(inputs)
         if cache is not None:
             if memory is not None:
-                memory_attention_bias = cache['memory_attention_bias']
+                memory_attention_bias = cache["memory_attention_bias"]
         else:
             assert decoder_self_attention_bias is not None
 
         x = inputs
         for i in range(self._hparams.num_blocks):
-            layer_cache = cache['layers'][i] if cache is not None else None
+            layer_cache = cache["layers"][i] if cache is not None else None
 
             selfatt_output = self.self_attns[i](
                 queries=self.self_attn_layer_norm[i](x),
                 memory=None,
                 memory_attention_bias=decoder_self_attention_bias,
-                cache=layer_cache)
+                cache=layer_cache,
+            )
             x = x + self.residual_dropout(selfatt_output)
 
             if memory is not None:
                 encdec_output = self.enc_dec_attns[i](
                     queries=self.end_dec_attn_layer_norm[i](x),
                     memory=memory,
-                    memory_attention_bias=memory_attention_bias)
+                    memory_attention_bias=memory_attention_bias,
+                )
                 x = x + self.residual_dropout(encdec_output)
 
             sub_output = self.poswise_networks[i](self.poswise_layer_norm[i](x))
@@ -617,10 +674,13 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
 
         return self.final_layer_norm(x)
 
-    def _init_cache(self, memory: Optional[torch.Tensor],
-                    memory_attention_bias: Optional[torch.Tensor],
-                    beam_search_decoding: bool,
-                    batch_size: int) -> Cache:
+    def _init_cache(
+        self,
+        memory: Optional[torch.Tensor],
+        memory_attention_bias: Optional[torch.Tensor],
+        beam_search_decoding: bool,
+        batch_size: int,
+    ) -> Cache:
         r"""Returns an initialized cache.
 
         In order to support both inference-like decoding and beam-search
@@ -638,29 +698,35 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
 
         def _create_empty_tensor():
             return torch.zeros(
-                batch_size, 0, self._hparams.multihead_attention.num_units,
-                dtype=torch.float)
+                batch_size,
+                0,
+                self._hparams.multihead_attention.num_units,
+                dtype=torch.float,
+            )
 
-        _create_fn = (_create_empty_tensor if beam_search_decoding
-                      else _create_ta)
+        _create_fn = (
+            _create_empty_tensor if beam_search_decoding else _create_ta
+        )
 
         cache: Cache = {
-            'memory': memory,
-            'memory_attention_bias': memory_attention_bias,
-            'layers': [{
-                'keys': _create_fn(),
-                'values': _create_fn(),
-            } for _ in range(self._hparams.num_blocks)],
+            "memory": memory,
+            "memory_attention_bias": memory_attention_bias,
+            "layers": [
+                {"keys": _create_fn(), "values": _create_fn()}
+                for _ in range(self._hparams.num_blocks)
+            ],
         }
 
         return cache
 
-    def _beam_decode(self,
-                     start_tokens,
-                     end_token,
-                     decode_length=256,
-                     beam_width=5,
-                     length_penalty=0.6):
+    def _beam_decode(
+        self,
+        start_tokens,
+        end_token,
+        decode_length=256,
+        beam_width=5,
+        length_penalty=0.6,
+    ):
         # def _symbols_to_logits_fn(ids, step, cache):
         #     return self._inputs_to_outputs(
         #         self._embedding(ids[:, -1]), step, cache)
@@ -688,19 +754,26 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
         """
         return self._input_size
 
-    def initialize(self, helper: Helper, inputs: Optional[torch.Tensor],
-                   sequence_length: Optional[torch.LongTensor],
-                   initial_state: Optional[Cache]) \
-            -> Tuple[torch.ByteTensor, torch.Tensor, Cache]:
+    def initialize(
+        self,
+        helper: Helper,
+        inputs: Optional[torch.Tensor],
+        sequence_length: Optional[torch.LongTensor],
+        initial_state: Optional[Cache],
+    ) -> Tuple[torch.ByteTensor, torch.Tensor, Cache]:
         initial_finished, initial_inputs = helper.initialize(
-            inputs, sequence_length)
+            inputs, sequence_length
+        )
         state = initial_state or self._state_cache
         return (initial_finished, initial_inputs, state)
 
-    def step(self, helper: Helper, time: int,
-             inputs: torch.Tensor, state: Optional[Cache]) \
-            -> Tuple[TransformerDecoderOutput, Cache,
-                     torch.Tensor, torch.ByteTensor]:
+    def step(
+        self,
+        helper: Helper,
+        time: int,
+        inputs: torch.Tensor,
+        state: Optional[Cache],
+    ) -> Tuple[TransformerDecoderOutput, Cache, torch.Tensor, torch.ByteTensor]:
         assert state is not None
         outputs, state = self._inputs_to_outputs(inputs, state)
         sample_ids = helper.sample(time=time, outputs=outputs)
@@ -709,7 +782,8 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
             sample_ids = torch.where(
                 self._state_context_sequence_length > time,
                 self._state_context[:, time],
-                sample_ids)
+                sample_ids,
+            )
 
         if time + 1 == self._state_max_decoding_length:
             # Maximum decoding length reached, mark all batches as finished.
@@ -720,18 +794,18 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
             next_inputs = torch.empty(0)
         else:
             finished, next_inputs = helper.next_inputs(
-                time=time, outputs=outputs, sample_ids=sample_ids)
+                time=time, outputs=outputs, sample_ids=sample_ids
+            )
         next_state = state
-        outputs = TransformerDecoderOutput(
-            logits=outputs,
-            sample_id=sample_ids)
+        outputs = TransformerDecoderOutput(logits=outputs, sample_id=sample_ids)
         return outputs, next_state, next_inputs, finished
 
-    def finalize(self,  # type: ignore
-                 outputs: TransformerDecoderOutput,
-                 final_state: Optional[Cache],
-                 sequence_lengths: torch.LongTensor) \
-            -> Tuple[TransformerDecoderOutput, Optional[Cache]]:
+    def finalize(
+        self,  # type: ignore
+        outputs: TransformerDecoderOutput,
+        final_state: Optional[Cache],
+        sequence_lengths: torch.LongTensor,
+    ) -> Tuple[TransformerDecoderOutput, Optional[Cache]]:
         # Clear state variables at end of decoding.
         del self._state_max_decoding_length
         del self._state_context

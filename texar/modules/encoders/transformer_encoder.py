@@ -19,7 +19,6 @@ from typing import Optional, Dict
 
 import torch
 from texar import HParams
-from texar import utils
 from texar.core import layers
 from texar.modules.encoders.encoder_base import EncoderBase
 from texar.modules.encoders.multihead_attention import \
@@ -185,6 +184,7 @@ class TransformerEncoder(EncoderBase):
 
         self.embed_dropout = nn.Dropout(p=self._hparams.embedding_dropout)
         self.residual_dropout = nn.Dropout(p=self._hparams.residual_dropout)
+
         if self._hparams.use_bert_config:
             self.input_normalizer = nn.LayerNorm(self._input_size)
         else:
@@ -195,8 +195,9 @@ class TransformerEncoder(EncoderBase):
             assert initialize is not None
             # don't need to re-initialze the LayerNorm
             for name, param in self.named_parameters():
-                if name.split('.')[-1] == 'weight':
+                if name.split('.')[-1] == 'weight' and 'layer_norm' not in name:
                     initialize(param)
+
     @staticmethod
     def default_hparams():
         r"""Returns a dictionary of hyperparameters with default values.
