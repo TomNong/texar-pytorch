@@ -323,6 +323,7 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
         context: Optional[torch.Tensor] = None,
         context_sequence_length: Optional[torch.LongTensor] = None,
         helper: Optional[Helper] = None,
+        embedding: Optional[Helper] = None,
         decoding_strategy: str = "train_greedy",
         max_decoding_length: Optional[int] = None,
         impute_finished: bool = False,
@@ -450,6 +451,7 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
                 :tf_main:`Helper <contrib/seq2seq/Helper>` that defines the
                 decoding strategy. If given, :attr:`decoding_strategy` is
                 ignored.
+            embedding: (Optional): to help create the helper
             infer_mode (optional): If not `None`, overrides mode given by
                 `self.training`.
 

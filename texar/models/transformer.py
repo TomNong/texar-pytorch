@@ -163,6 +163,7 @@ class Transformer(ModuleBase):
                 end_token=self.eos_token_id,
                 embedding=_embedding_fn,
                 max_decoding_length=self.config_data.max_decoding_length,
+                decoding_strategy="infer_greedy"
             )
             # Uses the best sample by beam search
             return predictions
@@ -193,7 +194,6 @@ class LabelSmoothingLoss(nn.Module):
         self.register_buffer("one_hot", one_hot.unsqueeze(0))
 
         self.confidence = label_confidence
-        print('confidence:{}'.format(self.confidence))
 
     def forward(
         self,
