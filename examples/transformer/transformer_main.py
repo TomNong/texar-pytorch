@@ -72,30 +72,19 @@ def main():
         id2w = pickle.load(f)
     vocab_size = len(id2w)
 
+    beam_width = getattr(config_model, "beam_width", 1)
+
     # Create logging
     tx.utils.maybe_create_dir(args.model_dir)
     logging_file = os.path.join(args.model_dir, 'logging.txt')
     logger = utils.get_logger(logging_file)
     print('logging file is saved in: %s', logging_file)
 
-    # Build model graph
-    global_step = 0
-
-    # You need to do label smoothing outside
-
     model = Transformer(config_model, config_data)
     if torch.cuda.is_available():
         model = model.cuda()
 
-
     best_results = {'score': 0, 'epoch': -1}
-
-    print('there are {} parameters in model'.format(len(list(model.parameters()))))
-    for param in model.parameters():
-        assert param.requires_grad
-        assert param.dtype == torch.float32
-    print('success')
-
     opt = torch.optim.Adam(
         model.parameters(), betas=(0.9, 0.997), eps=1e-9
     )
@@ -116,11 +105,13 @@ def main():
             predictions = model(
                 encoder_input=x_block,
                 is_train_mode=False,
-                beam_width=getattr(config_model, 'beam_width')
-            )
-            beam_search_ids = predictions["sample_id"][:, :, 0]
+                beam_width=beam_width)
+            if beam_width == 1:
+                decoded_ids = predictions[0].sample_id
+            else:
+                decoded_ids = predictions["sample_id"][:, :, 0]
 
-            hypotheses.extend(h.tolist() for h in beam_search_ids)
+            hypotheses.extend(h.tolist() for h in decoded_ids)
             references.extend(r.tolist() for r in targets)
             hypotheses = utils.list_strip_eos(hypotheses, eos_token_id)
             references = utils.list_strip_eos(references, eos_token_id)
@@ -194,12 +185,13 @@ def main():
             opt.step()
             model.step_iteration += 1
             step = model.step_iteration
+            _eval_epoch(epoch, mode='eval')
+            exit()
             if step % config_data.display_steps == 0:
                 logger.info('step: %d, loss: %.4f', step, loss)
                 print('lr: {} step: {}, loss: {}'.format(lr, step, loss))
             if step and step % config_data.eval_steps == 0:
                 _eval_epoch(epoch, mode='eval')
-
 
     if args.run_mode == 'train_and_evaluate':
         logger.info('Begin running with train_and_evaluate mode')

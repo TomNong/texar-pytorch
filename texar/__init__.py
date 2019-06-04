@@ -22,3 +22,4 @@ from texar import utils
 from texar import losses
 from texar.hyperparams import *
 from texar.module_base import *
+from texar import modules
