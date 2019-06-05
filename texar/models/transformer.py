@@ -1,10 +1,8 @@
-import math
-from typing import Callable
 import pickle
 from typing import Optional
 
 import torch
-from torch import nn, LongTensor, Tensor
+from torch import nn
 
 
 import texar as tx
@@ -28,17 +26,18 @@ class Transformer(ModuleBase):
         self.pad_token_id, self.bos_token_id = (0, 1)
         self.eos_token_id, self.unk_token_id = (2, 3)
 
-        word_embedder = tx.modules.WordEmbedder(
+        self.word_embedder = tx.modules.WordEmbedder(
             vocab_size=self.vocab_size, hparams=config_model.emb
         )
-        pos_embedder = tx.modules.SinusoidsPositionEmbedder(
+        self.pos_embedder = tx.modules.SinusoidsPositionEmbedder(
             position_size=config_data.max_decoding_length,
             hparams=config_model.position_embedder_hparams,
         )
-        encoder = TransformerEncoder(hparams=config_model.encoder)
-        decoder = TransformerDecoder(
+
+        self.encoder = TransformerEncoder(hparams=config_model.encoder)
+        self.decoder = TransformerDecoder(
             vocab_size=self.vocab_size,
-            output_layer=word_embedder.embedding,
+            output_layer=self.word_embedder.embedding,
             hparams=config_model.decoder,
         )
 
@@ -48,14 +47,6 @@ class Transformer(ModuleBase):
             ignore_index=0,
         )
 
-        self.submodules = nn.ModuleDict(
-            {
-                "word_embedder": word_embedder,
-                "pos_embedder": pos_embedder,
-                "encoder": encoder,
-                "decoder": decoder,
-            }
-        )
         self.step_iteration = 0
 
     def forward(
@@ -81,7 +72,7 @@ class Transformer(ModuleBase):
             self.eval()
 
         # Source word embedding
-        src_word_embeds = self.submodules["word_embedder"](
+        src_word_embeds = self.word_embedder(
             encoder_input
         )
         src_word_embeds = (
@@ -94,12 +85,12 @@ class Transformer(ModuleBase):
         )
         src_seq_len = src_seq_len.to(device=encoder_input.device)
 
-        src_pos_embeds = self.submodules["pos_embedder"](
+        src_pos_embeds = self.pos_embedder(
             sequence_length=src_seq_len
         )
         src_input_embedding = src_word_embeds + src_pos_embeds
 
-        encoder_output = self.submodules["encoder"](
+        encoder_output = self.encoder(
             inputs=src_input_embedding, sequence_length=encoder_input_length
         )
 
@@ -107,7 +98,7 @@ class Transformer(ModuleBase):
             if torch.cuda.is_available():
                 decoder_input = decoder_input.cuda()
 
-            tgt_word_embeds = self.submodules["word_embedder"](
+            tgt_word_embeds = self.word_embedder(
                 decoder_input
             )
             tgt_word_embeds = (
@@ -118,14 +109,14 @@ class Transformer(ModuleBase):
             )
             tgt_seq_len = tgt_seq_len.to(device=decoder_input.device)
 
-            tgt_pos_embeds = self.submodules["pos_embedder"](
+            tgt_pos_embeds = self.pos_embedder(
                 sequence_length=tgt_seq_len
             )
 
             tgt_input_embedding = tgt_word_embeds + tgt_pos_embeds
 
             # For training
-            outputs = self.submodules["decoder"](
+            outputs = self.decoder(
                 memory=encoder_output,
                 memory_sequence_length=encoder_input_length,
                 inputs=tgt_input_embedding,
@@ -148,12 +139,11 @@ class Transformer(ModuleBase):
                 start_tokens = start_tokens.cuda()
 
             def _embedding_fn(x, y):
-                print('step:{}'.format(y))
-                return self.submodules["word_embedder"](x)\
-                    * self.config_model.hidden_dim ** 0.5 \
-                    + self.submodules["pos_embedder"](y)
+                return self.word_embedder(
+                    x
+                ) * self.config_model.hidden_dim ** 0.5 + self.pos_embedder(y)
 
-            predictions = self.submodules["decoder"](
+            predictions = self.decoder(
                 memory=encoder_output,
                 memory_sequence_length=encoder_input_length,
                 beam_width=beam_width,
@@ -177,9 +167,9 @@ class LabelSmoothingLoss(nn.Module):
 
     def __init__(self, label_confidence, tgt_vocab_size, ignore_index=0):
         """
-        :param label_smoothing:
-        :param tgt_vocab_size:
-        :param ignore_index: The index in the vocabulary to ignore
+        :param label_confidence: the confidence weight on the ground truth label
+        :param tgt_vocab_size: the size of the final classification
+        :param ignore_index: The index in the vocabulary to ignore weight
         """
         self.ignore_index = ignore_index
         self.tgt_vocab_size = tgt_vocab_size
