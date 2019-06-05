@@ -142,20 +142,16 @@ class Transformer(ModuleBase):
             return mle_loss
         else:
             start_tokens = torch.full([batch_size], self.bos_token_id,
-                                      dtype=torch.int64)
+                                      dtype=torch.int32)
 
             if torch.cuda.is_available():
                 start_tokens = start_tokens.cuda()
 
             def _embedding_fn(x, y):
                 print('step:{}'.format(y))
-                return self.submodules["word_embedder"](
-                    x
-                ) * self.config_model.hidden_dim ** 0.5 + self.submodules[
-                    "pos_embedder"
-                ](
-                    y
-                )
+                return self.submodules["word_embedder"](x)\
+                    * self.config_model.hidden_dim ** 0.5 \
+                    + self.submodules["pos_embedder"](y)
 
             predictions = self.submodules["decoder"](
                 memory=encoder_output,
@@ -222,6 +218,7 @@ class LabelSmoothingLoss(nn.Module):
             output.reshape(ori_shapes[0]),
             model_prob.reshape(ori_shapes[0]),
         )
+
         return sequence_softmax_cross_entropy(
             labels=model_prob, logits=output, sequence_length=label_lengths,
             average_across_batch=False, sum_over_timesteps=False,
