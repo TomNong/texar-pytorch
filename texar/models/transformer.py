@@ -181,7 +181,6 @@ class LabelSmoothingLoss(nn.Module):
         one_hot = torch.full((tgt_vocab_size,), smoothing_value)
         one_hot[self.ignore_index] = 0
         self.register_buffer("one_hot", one_hot.unsqueeze(0))
-
         self.confidence = label_confidence
 
     def forward(
@@ -192,7 +191,8 @@ class LabelSmoothingLoss(nn.Module):
     ) -> torch.Tensor:
         """
         output (FloatTensor): batch_size x seq_length * n_classes
-        target (LongTensor): batch_size * seq_length
+        target (LongTensor): batch_size * seq_length, specify the label target
+        label_lengths(torch.LongTensor): specify the length of the labels
         """
         ori_shapes = (output.size(), target.size())
         output, target = (

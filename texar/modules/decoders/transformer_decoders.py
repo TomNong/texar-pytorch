@@ -168,7 +168,6 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
         if self._hparams.initializer:
             initialize = layers.get_initializer(self._hparams.initializer)
             assert initialize is not None
-            # don't need to re-initialze the LayerNorm
             for name, param in self.named_parameters():
                 if name.split(".")[-1] == "weight" and "layer_norm" not in name:
                     initialize(param)
