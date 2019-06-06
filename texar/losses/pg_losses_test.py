@@ -27,14 +27,14 @@ class PGLossesTest(unittest.TestCase):
         self._num_classes = 10
         self._actions_batch = torch.ones(self._batch_size, self._max_time,
                                          self._d1, self._d2, self._d3,
-                                         dtype=torch.int64)
+                                         dtype=torch.long)
         self._logits_batch = torch.rand(self._batch_size, self._max_time,
                                         self._d1, self._d2, self._d3,
                                         self._num_classes)
         self._advantages_batch = torch.rand(self._batch_size, self._max_time,
                                             self._d1, self._d2, self._d3)
         self._actions_no_batch = torch.ones(self._max_time, self._d1, self._d2,
-                                            self._d3, dtype=torch.int64)
+                                            self._d3, dtype=torch.long)
         self._logits_no_batch = torch.rand(self._max_time, self._d1, self._d2,
                                            self._d3, self._num_classes)
         self._advantages_no_batch = torch.rand(self._max_time, self._d1,

@@ -33,7 +33,6 @@ class Transformer(ModuleBase):
             position_size=config_data.max_decoding_length,
             hparams=config_model.position_embedder_hparams,
         )
-
         self.encoder = TransformerEncoder(hparams=config_model.encoder)
         self.decoder = TransformerDecoder(
             vocab_size=self.vocab_size,
@@ -81,7 +80,7 @@ class Transformer(ModuleBase):
 
         # Position embedding (shared b/w source and target)
         src_seq_len = torch.full(
-            [batch_size], encoder_input.size()[1], dtype=torch.int32
+            [batch_size], encoder_input.size()[1], dtype=torch.long
         )
         src_seq_len = src_seq_len.to(device=encoder_input.device)
 
@@ -105,7 +104,7 @@ class Transformer(ModuleBase):
                 tgt_word_embeds * self.config_model.hidden_dim ** 0.5
             )
             tgt_seq_len = torch.full(
-                [batch_size], decoder_input.size()[1], dtype=torch.int32
+                [batch_size], decoder_input.size()[1], dtype=torch.long
             )
             tgt_seq_len = tgt_seq_len.to(device=decoder_input.device)
 
@@ -133,27 +132,40 @@ class Transformer(ModuleBase):
             return mle_loss
         else:
             start_tokens = torch.full([batch_size], self.bos_token_id,
-                                      dtype=torch.int32)
+                                      dtype=torch.long)
 
             if torch.cuda.is_available():
                 start_tokens = start_tokens.cuda()
 
             def _embedding_fn(x, y):
-                return self.word_embedder(
-                    x
-                ) * self.config_model.hidden_dim ** 0.5 + self.pos_embedder(y)
+                print('in embedding_fn:{} {}'.format(x.dtype, y.dtype))
+                return self.word_embedder(x.type(torch.long)) \
+                    * self.config_model.hidden_dim ** 0.5\
+                    + self.pos_embedder(y.type(torch.long))
 
-            predictions = self.decoder(
-                memory=encoder_output,
-                memory_sequence_length=encoder_input_length,
-                beam_width=beam_width,
-                length_penalty=self.config_model.length_penalty,
-                start_tokens=start_tokens,
-                end_token=self.eos_token_id,
-                embedding=_embedding_fn,
-                max_decoding_length=self.config_data.max_decoding_length,
-                decoding_strategy="infer_greedy"
-            )
+            if beam_width is not None and beam_width > 1:
+                predictions = self.decoder(
+                    memory=encoder_output,
+                    memory_sequence_length=encoder_input_length,
+                    beam_width=beam_width,
+                    length_penalty=self.config_model.length_penalty,
+                    start_tokens=start_tokens,
+                    end_token=self.eos_token_id,
+                    embedding=_embedding_fn,
+                    max_decoding_length=self.config_data.max_decoding_length,
+                )
+            else:
+                predictions = self.decoder(
+                    memory=encoder_output,
+                    memory_sequence_length=encoder_input_length,
+                    beam_width=beam_width,
+                    length_penalty=self.config_model.length_penalty,
+                    start_tokens=start_tokens,
+                    end_token=self.eos_token_id,
+                    embedding=_embedding_fn,
+                    max_decoding_length=self.config_data.max_decoding_length,
+                    decoding_strategy="infer_greedy"
+                )
             # Uses the best sample by beam search
             return predictions
 

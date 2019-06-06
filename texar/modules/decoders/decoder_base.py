@@ -58,7 +58,7 @@ def _make_output_layer(layer: Optional[Union[nn.Module, torch.Tensor]],
                 "wanted.")
         output_layer = nn.Linear(output_size, vocab_size, bias)
     elif torch.is_tensor(layer):
-        vocab_size = layer.size(1)
+        vocab_size = layer.size(0)
         output_layer = nn.Linear(layer.size(1), layer.size(0), bias)
         if not isinstance(layer, nn.Parameter):
             layer = nn.Parameter(layer, requires_grad=True)
@@ -69,7 +69,7 @@ def _make_output_layer(layer: Optional[Union[nn.Module, torch.Tensor]],
         raise ValueError(
             f"output_layer should be an instance of `nn.Module`, a tensor,"
             f"or None. Unsupported type: {type(layer)}")
-
+    print('vocab_size in output layer:{}'.format(vocab_size))
     return output_layer, vocab_size
 
 
@@ -225,7 +225,7 @@ class DecoderBase(ModuleBase, Generic[State, Output], ABC):
                     start_tokens=[data.vocab.bos_token_id]*100,
                     end_token=data.vocab.eos_token_id,
                     max_decoding_length=60,
-                    mode=tf.estimator.ModeKeys.PREDICT)
+                    mode=torch.estimator.ModeKeys.PREDICT)
                         # PREDICT mode also shuts down dropout
 
         Args:
@@ -237,7 +237,7 @@ class DecoderBase(ModuleBase, Generic[State, Output], ABC):
                 of `inputs` (e.g., an instance of subclass of
                 :class:`~texar.modules.EmbedderBase`), or the `params`
                 argument of
-                :tf_main:`tf.nn.embedding_lookup <nn/embedding_lookup>`.
+                :tf_main:`torch.nn.embedding_lookup <nn/embedding_lookup>`.
                 If provided, `inputs` (if used) will be passed to
                 `embedding` to fetch the embedding vectors of the inputs.
                 Required when `decoding_strategy="infer_greedy"`
@@ -251,7 +251,7 @@ class DecoderBase(ModuleBase, Generic[State, Output], ABC):
                 Companying with Texar data module, to get `batch_size` samples
                 where batch_size is changing according to the data module,
                 this can be set as
-                `start_tokens=tf.ones_like(batch['length'])*bos_token_id`.
+                `start_tokens=torch.ones_like(batch['length'])*bos_token_id`.
             end_token (optional): A int 0D Tensor, the token that marks end
                 of decoding.
                 Used when `decoding_strategy="infer_greedy"` or

@@ -25,7 +25,6 @@ from texar.modules.encoders.multihead_attention import \
     MultiheadAttentionEncoder
 from texar.modules.networks.networks import FeedForwardNetwork
 from texar.utils import transformer_attentions as attn
-from texar.utils.shapes import shape_list
 from texar.utils.utils import sequence_mask
 from torch import nn
 
@@ -364,7 +363,7 @@ class TransformerEncoder(EncoderBase):
             else:
                 y = poswise_normalizer(x)
 
-            original_shape = shape_list(y)
+            original_shape = y.size()
 
             y = y.view(-1, self._hparams.dim)
 

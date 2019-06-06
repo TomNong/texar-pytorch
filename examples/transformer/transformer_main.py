@@ -70,7 +70,6 @@ def main():
         config_data.input_dir, config_data.filename_prefix)
     with open(config_data.vocab_file, 'rb') as f:
         id2w = pickle.load(f)
-    vocab_size = len(id2w)
 
     beam_width = getattr(config_model, "beam_width", 1)
 

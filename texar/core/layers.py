@@ -476,7 +476,7 @@ def get_layer(hparams: Union[HParams, Dict[str, Any]]) -> nn.Module:
     Raises:
         ValueError: If :attr:`hparams` is `None`.
         ValueError: If the resulting layer is not an instance of
-            :torch_docs:`tf.nn.Module <nn.html>`.
+            :torch_docs:`torch.nn.Module <nn.html>`.
     """
     if hparams is None:
         raise ValueError("`hparams` must not be `None`.")
