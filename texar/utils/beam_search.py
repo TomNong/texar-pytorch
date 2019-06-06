@@ -171,7 +171,7 @@ def compute_topk_scores_and_seq(
     # batch the beam item is in. This will create the i of the i,j
     # coordinate needed for the gather
     batch_pos = compute_batch_indices(batch_size, beam_size)
-
+    batch_pos = batch_pos.to(device=topk_indexes.device)
     # top coordinates will give us the actual coordinates to do the gather.
     # stacking will create a tensor of dimension batch * beam * 2, where
     # the last dimension contains the i,j gathering coordinates.
@@ -261,6 +261,7 @@ def beam_search(
     initial_log_probs = torch.tensor(
         [[0.0] + [-float("inf")] * (beam_size - 1)]
     )  # [1, beam_size]
+    initial_log_probs = initial_log_probs.to(device=initial_ids.device)
     # Expand to beam_size (batch_size, beam_size)
     alive_log_probs = initial_log_probs.repeat([batch_size, 1])
 
@@ -284,6 +285,10 @@ def beam_search(
     # Setting the scores of the initial to negative infinity.
     finished_scores = torch.ones([batch_size, beam_size]) * -INF
     finished_flags = torch.zeros([batch_size, beam_size]).byte()
+
+    finished_seq = finished_seq.to(device=initial_ids.device)
+    finished_scores = finished_scores.to(device=initial_ids.device)
+    finished_flags = finished_flags.to(device=initial_ids.device)
 
     def grow_finished(
         finished_seq,
@@ -319,10 +324,12 @@ def beam_search(
         """
         # First append a column of 0'ids to finished to make the same
         # length with finished scores
+        _appended = torch.zeros([batch_size, beam_size, 1], dtype=torch.long)
+        _appended = _appended.to(device=finished_seq.device)
         finished_seq = torch.cat(
             [
                 finished_seq,
-                torch.zeros([batch_size, beam_size, 1], dtype=torch.long),
+                _appended,
             ],
             dim=2,
         )
@@ -460,17 +467,12 @@ def beam_search(
         # We will also use the coordinates to gather the booleans of the
         # beam items that survived.
         batch_pos = compute_batch_indices(batch_size, beam_size * 2)
-
+        batch_pos = batch_pos.to(device=topk_beam_index.device)
         # top beams will give us the actual coordinates to do the gather.
         # stacking will create a tensor of dimension batch * beam * 2,
         # where the last dimension contains the i,j gathering coordinates.
-        print('batch_pos:{} topk_beam_index:{}'.format(batch_pos,
-                                                       topk_beam_index))
         topk_coordinates = torch.stack([batch_pos, topk_beam_index], dim=2)
         # [batch_size, beam_size, 2]
-
-        print('alive_seq:{} topk_coordinates:{}'.format(alive_seq.size(),
-                                                        topk_coordinates.size()))
 
         topk_seq = gather_nd(alive_seq, topk_coordinates)
 

@@ -140,6 +140,7 @@ class Transformer(ModuleBase):
             def _embedding_fn(x, y):
                 x = x.to(device=self.word_embedder._embedding.device)
                 y = y.to(device=x.device)
+                print('y:{}'.format(y))
                 return self.word_embedder(x.type(torch.long)) \
                     * self.config_model.hidden_dim ** 0.5\
                     + self.pos_embedder(y.type(torch.long))
@@ -160,7 +161,6 @@ class Transformer(ModuleBase):
                     memory=encoder_output,
                     memory_sequence_length=encoder_input_length,
                     beam_width=beam_width,
-                    length_penalty=self.config_model.length_penalty,
                     start_tokens=start_tokens,
                     end_token=self.eos_token_id,
                     embedding=_embedding_fn,

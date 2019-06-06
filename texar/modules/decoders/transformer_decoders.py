@@ -698,12 +698,15 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
             return []
 
         def _create_empty_tensor():
-            return torch.zeros(
+            ret = torch.zeros(
                 batch_size,
                 0,
                 self._hparams.multihead_attention.num_units,
                 dtype=torch.float,
             )
+            if torch.cuda.is_available():
+                ret = ret.cuda()
+            return ret
 
         _create_fn = (
             _create_empty_tensor if beam_search_decoding else _create_ta
