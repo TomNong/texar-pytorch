@@ -120,7 +120,6 @@ def compute_topk_scores_and_seq(
     flags,
     beam_size,
     batch_size,
-    prefix="default",
     states_to_gather=None,
 ):
     """Given sequences and scores, will gather the top k=beam size
@@ -154,7 +153,6 @@ def compute_topk_scores_and_seq(
             has reached EOS or not
         beam_size: int
         batch_size: int
-        prefix: string that will prefix unique names for the ops run.
         states_to_gather: dict (possibly nested) of decoding states.
 
     Returns:
@@ -348,7 +346,6 @@ def beam_search(
             curr_finished_flags,
             beam_size,
             batch_size,
-            "grow_finished",
         )
 
     def grow_alive(
@@ -385,7 +382,6 @@ def beam_search(
             curr_finished,
             beam_size,
             batch_size,
-            "grow_alive",
             states,
         )
 
@@ -603,9 +599,7 @@ def beam_search(
         """
         if not stop_early:
             return i < decode_length
-        max_length_penalty = torch.pow(
-            ((5.0 + decode_length.float()) / 6.0), alpha
-        )
+        max_length_penalty = ((5.0 + float(decode_length)) / 6.0) ** alpha
         # The best possible score of the most likley alive sequence
         lower_bound_alive_scores = alive_log_probs[:, 0] / max_length_penalty
 
@@ -614,25 +608,32 @@ def beam_search(
         # If the sequence isn't finished, we multiply it's score by 0.
         # since scores are all -ve, taking the min will give us the score
         # of the lowest finished item.
-        lowest_score_of_fininshed_in_finished = (
-            finished_scores * finished_in_finished.float()
-        ).min(dim=1)
+        lowest_score_of_fininshed_in_finished = torch.min(
+            finished_scores * finished_in_finished.float(), dim=1).values
         # If none of the sequences have finished, then the min will be 0
         # and we have to replace it by -ve INF if it is. The score of any
         # seq in alive will be much higher than -ve INF and the
         # termination condition will not be met.
-        lowest_score_of_fininshed_in_finished += (
+        lowest_score_of_fininshed_in_finished = \
+            lowest_score_of_fininshed_in_finished + (
             1.0 - finished_in_finished.any(dim=1).float()
         ) * -INF
 
         bound_is_met = (
             lowest_score_of_fininshed_in_finished > lower_bound_alive_scores
-        ).all()
+        ).all().item()
+        ret = (i < decode_length) & (~bound_is_met)
 
-        return i < decode_length and not bound_is_met
+        return ret
 
     step = 0
-    while _is_finished:
+    while _is_finished(step,
+            alive_seq,
+            alive_log_probs,
+            finished_seq,
+            finished_scores,
+            finished_flags,
+            states):
         step, alive_seq, alive_log_probs, finished_seq, finished_scores, finished_flags, states = inner_loop(
             step,
             alive_seq,
@@ -649,11 +650,30 @@ def beam_search(
     # reduce_any(finished_flags, 1)
     # if 0, means that no sequence for that batch index had reached EOS.
     # We need to do the same for the scores as well.
+    print('alive_seq:{}'.format(alive_seq.size()))
+    print('finished_seq:{}'.format(finished_seq.size()))
+    print('finished_flags:{}'.format(finished_flags.any(dim=1).size()))
+
+    """
     finished_seq = torch.where(
         finished_flags.any(dim=1), finished_seq, alive_seq
     )
     finished_scores = torch.where(
         finished_flags.any(dim=1), finished_scores, alive_log_probs
     )
-    return finished_seq, finished_scores
+    """
+
+    ret_seq, ret_scores = [], []
+    for idx, flag_per_instance in enumerate(finished_flags.any(dim=1).tolist()):
+        if flag_per_instance:
+            ret_seq.append(finished_seq[idx])
+            ret_scores.append(finished_scores[idx])
+        else:
+            ret_seq.append(alive_seq[idx])
+            ret_scores.append(alive_log_probs[idx])
+
+    ret_seq = torch.stack(ret_seq, dim=0)
+    ret_scores = torch.stack(ret_scores, dim=0)
+
+    return ret_seq, ret_scores
 

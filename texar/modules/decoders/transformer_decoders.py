@@ -543,7 +543,6 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
             max_decoding_length = self._hparams.max_decoding_length
 
         self._state_max_decoding_length = max_decoding_length
-
         if beam_width is None or beam_width == 1:  # Inference-like decoding
             # Prepare helper
             if helper is None:
@@ -746,8 +745,10 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
 
         # Ignores <BOS>
         outputs = outputs[:, :, 1:]
-        # shape = [batch_size, seq_length, beam_width]
+        # shape = [batch_size, beam_width, seq_length]
+
         outputs = torch.transpose(outputs, 1, 2)
+        # shape = [batch_size, seq_length, beam_width]
 
         return outputs, log_prob
 
