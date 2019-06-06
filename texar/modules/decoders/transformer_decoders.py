@@ -310,7 +310,6 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
         """
         _batch_size = input_ids.size(0)
         times = input_ids.new_full((_batch_size,), step)
-        print('input_ids:{} times:{}'.format(input_ids.dtype, times.dtype))
         inputs = self.embedding(input_ids, times)
         return self._inputs_to_outputs(inputs, cache)
 
@@ -689,8 +688,7 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
         In order to support both inference-like decoding and beam-search
         decoding, the elements of each layer must be initialized and extended
         as different structure respectively. Specifically, when inference-like
-        decoding, torch.TensorArray is used, which satisfies the shape consistency
-        check in the while-loop in torch.contrib.seq2seq.dynamic_decode. When
+        decoding, A simple list is used. When
         beam-search decoding, a torch.Tensor of shape
         `[batch_size, current_steps, num_units]` is maintained, where
         `current_steps` is the number of steps currently decoded.
@@ -734,7 +732,6 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
         def _symbols_to_logits_fn(ids, step, cache):
             return self._input_ids_to_outputs(ids[:, -1], step, cache)
 
-        print('vocab_size:{}'.format(self._vocab_size))
         outputs, log_prob = beam_search.beam_search(
             _symbols_to_logits_fn,
             start_tokens,

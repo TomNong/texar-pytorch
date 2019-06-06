@@ -157,10 +157,10 @@ def init_bert_checkpoint(model, init_checkpoint):
     }
     tf_path = os.path.abspath(init_checkpoint)
     # Load weights from TF model
-    init_vars = torch.train.list_variables(tf_path)
+    init_vars = tf.train.list_variables(tf_path)
     tfnames, arrays = [], []
     for name, shape in init_vars:
-        array = torch.train.load_variable(tf_path, name)
+        array = tf.train.load_variable(tf_path, name)
         tfnames.append(name)
         arrays.append(array.squeeze())
 
