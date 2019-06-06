@@ -12,15 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Modules of texar library.
+Modules of texar core.
 """
 
 # pylint: disable=wildcard-import
 
-from texar import core
-from texar import utils
-from texar import losses
-from texar.hyperparams import *
-from texar.module_base import *
-from texar import modules
-from texar import evals
+from texar.evals.metrics import *

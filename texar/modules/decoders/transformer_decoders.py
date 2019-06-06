@@ -15,18 +15,17 @@
 Transformer decoder.
 """
 
-from typing import Dict, List, NamedTuple, Optional, Tuple, Union
+from typing import Dict, NamedTuple, Optional, Tuple, Union
 
 import torch
 from torch import nn
 
-from texar import HParams, ModuleBase
+from texar import HParams
 from texar.core import layers
 from texar.modules.networks import FeedForwardNetwork
 from texar.modules.decoders import Helper
 from texar.modules.decoders.decoder_base import DecoderBase, _make_output_layer
 from texar.modules.decoders.decoder_helpers import EmbeddingHelper
-from texar.modules.embedders import EmbedderBase
 from texar.modules.encoders.multihead_attention import (
     Cache,
     MultiheadAttentionEncoder,
@@ -36,7 +35,7 @@ from texar.modules.encoders.transformer_encoder import (
 )
 
 # from texar.utils import beam_search
-from texar.utils import get_instance, transformer_attentions as attn
+from texar.utils import transformer_attentions as attn
 from texar.utils.shapes import mask_sequences
 from texar.utils.utils import sequence_mask
 
@@ -169,7 +168,6 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
         if self._hparams.initializer:
             initialize = layers.get_initializer(self._hparams.initializer)
             assert initialize is not None
-            # don't need to re-initialze the LayerNorm
             for name, param in self.named_parameters():
                 if name.split(".")[-1] == "weight" and "layer_norm" not in name:
                     initialize(param)
@@ -487,7 +485,8 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
                     )
 
                 enc_padding = 1 - sequence_mask(
-                    memory_sequence_length, memory.size(1), dtype=torch.float32
+                    memory_sequence_length, int(memory.size(1)),
+                    dtype=torch.float32
                 )
                 memory_attention_bias = attn.attention_bias_ignore_padding(
                     enc_padding
