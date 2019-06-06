@@ -710,14 +710,13 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
         )
 
         cache = {
+            "memory": memory,
+            "memory_attention_bias": memory_attention_bias,
             "layers": [
                 {"keys": _create_fn(), "values": _create_fn()}
                 for _ in range(self._hparams.num_blocks)
             ],
         }
-        if memory is not None:
-            cache['memory'] = memory
-            cache['memory_attention_bias'] = memory_attention_bias
 
         return cache
 
