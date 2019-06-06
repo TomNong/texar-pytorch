@@ -138,8 +138,8 @@ class Transformer(ModuleBase):
                 start_tokens = start_tokens.cuda()
 
             def _embedding_fn(x, y):
-                x = x.to(device=self.word_embedder.embedding.device)
-                y = y.to(device=self.pos_embedder.embedding.device)
+                x = x.to(device=self.word_embedder._embedding.device)
+                y = y.to(device=self.pos_embedder._embedding.device)
                 return self.word_embedder(x.type(torch.long)) \
                     * self.config_model.hidden_dim ** 0.5\
                     + self.pos_embedder(y.type(torch.long))
