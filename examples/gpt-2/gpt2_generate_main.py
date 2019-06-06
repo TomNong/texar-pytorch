@@ -213,7 +213,7 @@ def run_model():
             print("=" * 80)
     else:
         # Generate samples from scratch
-        start_tokens = torch.full([batch_size], end_token, dtype=torch.int64)
+        start_tokens = torch.full([batch_size], end_token, dtype=torch.long)
         helper = tx.modules.TopKSampleEmbeddingHelper(
             embedding=_embedding_fn,
             start_tokens=start_tokens,

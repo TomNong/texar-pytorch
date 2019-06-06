@@ -114,11 +114,11 @@ def init_gpt2_checkpoint(word_embedder, pos_embedder, decoder, init_checkpoint):
 
     tf_path = os.path.abspath(init_checkpoint)
     # Load weights from TF model
-    init_vars = tf.train.list_variables(tf_path)
+    init_vars = torch.train.list_variables(tf_path)
     names = []
     arrays = []
     for name, shape in init_vars:
-        array = tf.train.load_variable(tf_path, name)
+        array = torch.train.load_variable(tf_path, name)
         names.append(name)
         arrays.append(array.squeeze())
 

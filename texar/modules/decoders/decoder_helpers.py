@@ -20,7 +20,7 @@ Various helper classes and utilities for RNN decoders.
 
 from abc import ABC
 from typing import Callable, Generic, Optional, Tuple, Type, TypeVar, \
-    Union, overload
+    Union, overload, List
 
 import torch
 import torch.nn.functional as F
@@ -143,7 +143,7 @@ class TrainingHelper(Helper[torch.LongTensor]):
 
         Args:
             embedding (optional): The `params` argument of
-                :tf_main:`tf.nn.embedding_lookup
+                :tf_main:`torch.nn.embedding_lookup
                 <nn/embedding_lookup>` (e.g., the embedding Tensor); or a
                 callable that takes a vector of integer indexes and returns
                 respective embedding (e.g., an instance of subclass of
@@ -447,7 +447,7 @@ class TopKSampleEmbeddingHelper(SingleEmbeddingHelper):
         Args:
             embedding: A callable that takes a vector tensor of `ids`
                 (argmax ids), or the `params` argument for
-                :tf_main:`tf.nn.embedding_lookup <nn/embedding_lookup>`, or an
+                :tf_main:`torch.nn.embedding_lookup <nn/embedding_lookup>`, or an
                 instance of subclass of :class:`texar.modules.EmbedderBase`.
                 The returned tensor will be passed to the decoder input.
             start_tokens: `int32` vector shaped `[batch_size]`, the start
@@ -511,7 +511,7 @@ class SoftmaxEmbeddingHelper(EmbeddingHelper[torch.Tensor]):
 
         Args:
             embedding: An embedding argument (:attr:`params`) for
-                :tf_main:`tf.nn.embedding_lookup <nn/embedding_lookup>`, or an
+                :tf_main:`torch.nn.embedding_lookup <nn/embedding_lookup>`, or an
                 instance of subclass of :class:`texar.modules.EmbedderBase`.
                 Note that other callables are not acceptable here.
             start_tokens: An int tensor shaped `[batch_size]`. The
@@ -585,7 +585,7 @@ class GumbelSoftmaxEmbeddingHelper(SoftmaxEmbeddingHelper):
 
         Args:
             embedding: An embedding argument (:attr:`params`) for
-                :tf_main:`tf.nn.embedding_lookup <nn/embedding_lookup>`, or an
+                :tf_main:`torch.nn.embedding_lookup <nn/embedding_lookup>`, or an
                 instance of subclass of :class:`texar.modules.EmbedderBase`.
                 Note that other callables are not acceptable here.
             start_tokens: An int tensor shaped `[batch_size]`. The

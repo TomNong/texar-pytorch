@@ -34,7 +34,7 @@ from texar.modules.encoders.transformer_encoder import (
     default_transformer_poswise_net_hparams,
 )
 
-# from texar.utils import beam_search
+from texar.utils import beam_search
 from texar.utils import transformer_attentions as attn
 from texar.utils.shapes import mask_sequences
 from texar.utils.utils import sequence_mask
@@ -172,6 +172,8 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
                 if name.split(".")[-1] == "weight" and "layer_norm" not in name:
                     initialize(param)
 
+        self.embedding = None
+
     @staticmethod
     def default_hparams():
         r"""Returns a dictionary of hyperparameters with default values.
@@ -308,6 +310,7 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
         """
         _batch_size = input_ids.size(0)
         times = input_ids.new_full((_batch_size,), step)
+        print('input_ids:{} times:{}'.format(input_ids.dtype, times.dtype))
         inputs = self.embedding(input_ids, times)
         return self._inputs_to_outputs(inputs, cache)
 
@@ -362,7 +365,7 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
           :attr:`beam_width` are both `None`.
 
         2. The :attr:`helper` argument: An instance of subclass of
-           :tf_main:`tf.contrib.seq2seq.Helper <contrib/seq2seq/Helper>`.
+           :tf_main:`torch.contrib.seq2seq.Helper <contrib/seq2seq/Helper>`.
            This provides a superset of decoding strategies than above.
            The interface is the same as in RNN decoders.
            Please refer to :meth:`texar.modules.RNNDecoderBase._build` for
@@ -613,6 +616,7 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
                     )
                 start_tokens = kwargs["start_tokens"]
             _batch_size = start_tokens.size(0)
+            self.embedding = kwargs['embedding']
             self._state_cache = self._init_cache(
                 memory,
                 memory_attention_bias,
@@ -685,9 +689,9 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
         In order to support both inference-like decoding and beam-search
         decoding, the elements of each layer must be initialized and extended
         as different structure respectively. Specifically, when inference-like
-        decoding, tf.TensorArray is used, which satisfies the shape consistency
-        check in the while-loop in tf.contrib.seq2seq.dynamic_decode. When
-        beam-search decoding, a tf.Tensor of shape
+        decoding, torch.TensorArray is used, which satisfies the shape consistency
+        check in the while-loop in torch.contrib.seq2seq.dynamic_decode. When
+        beam-search decoding, a torch.Tensor of shape
         `[batch_size, current_steps, num_units]` is maintained, where
         `current_steps` is the number of steps currently decoded.
         """
@@ -707,14 +711,15 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
             _create_empty_tensor if beam_search_decoding else _create_ta
         )
 
-        cache: Cache = {
-            "memory": memory,
-            "memory_attention_bias": memory_attention_bias,
+        cache = {
             "layers": [
                 {"keys": _create_fn(), "values": _create_fn()}
                 for _ in range(self._hparams.num_blocks)
             ],
         }
+        if memory is not None:
+            cache['memory'] = memory
+            cache['memory_attention_bias'] = memory_attention_bias
 
         return cache
 
@@ -726,26 +731,26 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
         beam_width=5,
         length_penalty=0.6,
     ):
-        # def _symbols_to_logits_fn(ids, step, cache):
-        #     return self._inputs_to_outputs(
-        #         self._embedding(ids[:, -1]), step, cache)
-        #
-        # outputs, log_prob = beam_search.beam_search(
-        #     _symbols_to_logits_fn,
-        #     start_tokens,
-        #     beam_width,
-        #     decode_length,
-        #     self._vocab_size,
-        #     length_penalty,
-        #     states=self._state_cache,
-        #     eos_id=end_token)
-        #
-        # # Ignores <BOS>
-        # outputs = outputs[:, :, 1:]
-        # # shape = [batch_size, seq_length, beam_width]
-        # outputs = outputs.permute([0, 2, 1])
-        # return (outputs, log_prob)
-        raise NotImplementedError
+        def _symbols_to_logits_fn(ids, step, cache):
+            return self._input_ids_to_outputs(ids[:, -1], step, cache)
+
+        print('vocab_size:{}'.format(self._vocab_size))
+        outputs, log_prob = beam_search.beam_search(
+            _symbols_to_logits_fn,
+            start_tokens,
+            beam_width,
+            decode_length,
+            self._vocab_size,
+            length_penalty,
+            states=self._state_cache,
+            eos_id=end_token)
+
+        # Ignores <BOS>
+        outputs = outputs[:, :, 1:]
+        # shape = [batch_size, seq_length, beam_width]
+        outputs = torch.transpose(outputs, 1, 2)
+
+        return outputs, log_prob
 
     @property
     def output_size(self) -> int:
@@ -764,7 +769,7 @@ class TransformerDecoder(DecoderBase[Cache, TransformerDecoderOutput]):
             inputs, sequence_length
         )
         state = initial_state or self._state_cache
-        return (initial_finished, initial_inputs, state)
+        return initial_finished, initial_inputs, state
 
     def step(
         self,

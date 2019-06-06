@@ -77,7 +77,7 @@ def transform_bert_to_texar_config(input_json):
     return configs
 
 
-def get_lr(global_step: int, num_train_steps, num_warmup_steps, static_lr,
+def get_lr(global_step: int, num_train_steps, num_warmup_steps: int, static_lr,
            end_learning_rate=1e-4):
     """
     Calculate the learinng rate given global step and warmup steps.
@@ -90,16 +90,14 @@ def get_lr(global_step: int, num_train_steps, num_warmup_steps, static_lr,
         (1 - global_step / num_train_steps) ** 1.0 + end_learning_rate
 
     if num_warmup_steps:
-        global_steps_int = tf.cast(global_step, tf.int32)
-        warmup_steps_int = tf.constant(num_warmup_steps, dtype=tf.int32)
 
         global_steps_float = float(global_step)
-        warmup_steps_float = float(warmup_steps_int)
+        warmup_steps_float = float(num_warmup_steps)
 
         warmup_percent_done = global_steps_float / warmup_steps_float
         warmup_learning_rate = static_lr * warmup_percent_done
 
-        is_warmup = float(global_steps_int < warmup_steps_int)
+        is_warmup = float(global_step < num_warmup_steps)
         learning_rate = ((1.0 - is_warmup) * decayed_learning_rate
                          + is_warmup * warmup_learning_rate)
 
@@ -159,10 +157,10 @@ def init_bert_checkpoint(model, init_checkpoint):
     }
     tf_path = os.path.abspath(init_checkpoint)
     # Load weights from TF model
-    init_vars = tf.train.list_variables(tf_path)
+    init_vars = torch.train.list_variables(tf_path)
     tfnames, arrays = [], []
     for name, shape in init_vars:
-        array = tf.train.load_variable(tf_path, name)
+        array = torch.train.load_variable(tf_path, name)
         tfnames.append(name)
         arrays.append(array.squeeze())
 
@@ -170,8 +168,6 @@ def init_bert_checkpoint(model, init_checkpoint):
 
     idx = 0
     for name, array in zip(tfnames, arrays):
-        processing = (idx + 1.0) / len(tfnames)
-
         if not name.startswith('bert'):
             continue
 

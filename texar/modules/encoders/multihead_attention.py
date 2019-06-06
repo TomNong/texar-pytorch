@@ -185,7 +185,6 @@ class MultiheadAttentionEncoder(EncoderBase):
                         res = torch.cat([res, out], dim=1)
                         out = res
                     cache[key] = res
-
             else:
                 # encoder decoder attention
                 if cache is not None:

@@ -279,7 +279,7 @@ class BertClassifier(ClassifierBase):
         word_embeds = self.word_embedder(inputs)
         segment_embeds = self.segment_embedder(segment_ids)
         seq_length = torch.full(
-            (inputs.size()[0]), inputs.size()[1], dtype=torch.int32
+            (inputs.size()[0]), inputs.size()[1], dtype=torch.long
         )
         pos_embeds = self.position_embedder(sequence_length=seq_length)
         input_embeds = word_embeds + segment_embeds + pos_embeds
