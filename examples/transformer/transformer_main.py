@@ -131,7 +131,8 @@ def main():
             hwords = tx.utils.str_join(hwords)
             rwords = tx.utils.str_join(rwords)
             hyp_fn, ref_fn = tx.utils.write_paired_text(
-                hwords, rwords, fname, mode='s')
+                hwords, rwords, fname, mode='s',
+                src_fname_suffix='hyp', tgt_fname_suffix='ref')
             eval_bleu = bleu_wrapper(ref_fn, hyp_fn, case_sensitive=True)
             eval_bleu = 100. * eval_bleu
             logger.info('epoch: %d, eval_bleu %.4f', epoch, eval_bleu)
