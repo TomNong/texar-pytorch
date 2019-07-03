@@ -226,7 +226,7 @@ class SinusoidsPositionEmbedder(EmbedderBase):
 
     def __init__(self, position_size: Optional[int] = None, hparams=None):
         super().__init__(hparams=hparams)
-        self._num_embeds = position_size  # type: ignore
+        self._num_embeds = position_size
         self._dim = self._hparams.dim
         self._cache_embeddings = self._hparams.cache_embeddings
 

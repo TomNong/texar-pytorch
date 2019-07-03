@@ -180,7 +180,7 @@ def _threshold_and_support(input: torch.Tensor,
 class SparsemaxFunction(Function):
 
     @staticmethod
-    def forward(ctx,  # type: ignore
+    def forward(ctx,
                 input: torch.Tensor,
                 dim: int = -1) -> torch.Tensor:
         ctx.dim = dim
@@ -192,7 +192,7 @@ class SparsemaxFunction(Function):
         return output
 
     @staticmethod
-    def backward(ctx,  # type: ignore
+    def backward(ctx,
                  grad_output: torch.Tensor) -> Tuple[torch.Tensor, None]:
         supp_size, output = ctx.saved_tensors
         dim = ctx.dim
@@ -215,4 +215,4 @@ def sparsemax(input: torch.Tensor, dim: int = -1) -> torch.Tensor:
     Returns:
         Tensor: output with the same shape as input.
     """
-    return SparsemaxFunction.apply(input, dim)  # type: ignore
+    return SparsemaxFunction.apply(input, dim)

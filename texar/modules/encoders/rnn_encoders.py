@@ -450,7 +450,7 @@ class UnidirectionalRNNEncoder(RNNEncoderBase[State]):
         Same as :attr:`encoder.cell.state_size`.
         """
         if isinstance(self._cell, LSTMCell):
-            return 2 * self._cell.hidden_size  # type: ignore
+            return 2 * self._cell.hidden_size
         else:
             return self._cell.hidden_size
 
@@ -533,7 +533,7 @@ class BidirectionalRNNEncoder(RNNEncoderBase):
             self._output_layer_fw = output_layer_fw
             self._output_layer_hparams_fw = None
         else:
-            self._output_layer_fw = _build_dense_output_layer(  # type: ignore
+            self._output_layer_fw = _build_dense_output_layer(
                 self._cell_fw.hidden_size, self._hparams.output_layer_fw)
             self._output_layer_hparams_fw = self._hparams.output_layer_fw
 
@@ -542,11 +542,11 @@ class BidirectionalRNNEncoder(RNNEncoderBase):
             self._output_layer_bw = output_layer_bw
             self._output_layer_hparams_bw = None
         elif self._hparams.output_layer_share_config:
-            self._output_layer_bw = _build_dense_output_layer(  # type: ignore
+            self._output_layer_bw = _build_dense_output_layer(
                 self._cell_bw.hidden_size, self._hparams.output_layer_fw)
             self._output_layer_hparams_bw = self._hparams.output_layer_fw
         else:
-            self._output_layer_bw = _build_dense_output_layer(  # type: ignore
+            self._output_layer_bw = _build_dense_output_layer(
                 self._cell_bw.hidden_size, self._hparams.output_layer_bw)
             self._output_layer_hparams_bw = self._hparams.output_layer_bw
 
@@ -763,7 +763,7 @@ class BidirectionalRNNEncoder(RNNEncoderBase):
         Same as :attr:`encoder.cell_fw.state_size`.
         """
         if isinstance(self._cell_fw, LSTMCell):
-            return 2 * self._cell_fw.hidden_size  # type: ignore
+            return 2 * self._cell_fw.hidden_size
         else:
             return self._cell_fw.hidden_size
 
@@ -773,7 +773,7 @@ class BidirectionalRNNEncoder(RNNEncoderBase):
         Same as :attr:`encoder.cell_bw.state_size`.
         """
         if isinstance(self._cell_bw, LSTMCell):
-            return 2 * self._cell_bw.hidden_size  # type: ignore
+            return 2 * self._cell_bw.hidden_size
         else:
             return self._cell_bw.hidden_size
 

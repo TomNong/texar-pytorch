@@ -71,7 +71,7 @@ def _make_output_layer(layer: Optional[Union[nn.Module, torch.Tensor]],
             layer = nn.Parameter(layer, requires_grad=False)
         output_layer.weight = layer
     elif layer is identity:
-        output_layer = identity  # type: ignore
+        output_layer = identity
     else:
         raise ValueError(
             f"output_layer should be an instance of `nn.Module`, a tensor,"

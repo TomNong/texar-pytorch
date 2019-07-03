@@ -57,7 +57,7 @@ class EmbedderBase(ModuleBase):
             if self._dim_rank == 1:
                 self._dim = self._embedding.size(1)
             else:
-                self._dim = self._embedding.size()[1:]  # type: ignore
+                self._dim = self._embedding.size()[1:]
 
     def _get_noise_shape(self, dropout_strategy: str,
                          ids_rank: Optional[int] = None,

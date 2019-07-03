@@ -64,7 +64,7 @@ class BertAdam(Optimizer):
 
         defaults = dict(lr=lr, betas=betas, eps=eps,
                         weight_decay=weight_decay, max_grad_norm=max_grad_norm)
-        super().__init__(params, defaults)  # type: ignore
+        super().__init__(params, defaults)
 
     def step(self, closure: Optional[Callable[[], float]] = None):
         r"""Performs a single optimization step.

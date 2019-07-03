@@ -176,7 +176,7 @@ def get_optimizer(
         optimizer_modules = ['torch.optim',
                              'texar.custom']
         try:
-            optimizer_class = utils.check_or_get_class(  # type: ignore
+            optimizer_class = utils.check_or_get_class(
                 optimizer_type, optimizer_modules, Optimizer)
         except TypeError:
             raise ValueError(
@@ -187,7 +187,7 @@ def get_optimizer(
 
     optimizer_kwargs = hparams_opt["kwargs"].todict()
     optimizer_kwargs.update({"params": params})
-    optimizer = optimizer_class(**optimizer_kwargs)  # type: ignore
+    optimizer = optimizer_class(**optimizer_kwargs)
 
     return optimizer
 
@@ -224,7 +224,7 @@ def get_scheduler(optimizer: Optimizer,
             scheduler_modules = ['torch.optim.lr_scheduler',
                                  'texar.custom']
             try:
-                scheduler_class = utils.check_or_get_class(  # type: ignore
+                scheduler_class = utils.check_or_get_class(
                     scheduler_type, scheduler_modules, _LRScheduler)
             except TypeError:
                 raise ValueError(
@@ -234,7 +234,7 @@ def get_scheduler(optimizer: Optimizer,
 
         scheduler_kwargs = hparams_scheduler["kwargs"].todict()
         scheduler_kwargs.update({"optimizer": optimizer})
-        scheduler = scheduler_class(**scheduler_kwargs)  # type: ignore
+        scheduler = scheduler_class(**scheduler_kwargs)
 
     return scheduler
 
@@ -293,7 +293,7 @@ def get_train_op(optimizer: Optimizer,
     grad_clip_fn = get_grad_clip_fn(hparams)
 
     params_list = []
-    for param_group in optimizer.param_groups:  # type: ignore
+    for param_group in optimizer.param_groups:
         params = param_group["params"]
         if isinstance(params, torch.Tensor):
             params_list.append(params)

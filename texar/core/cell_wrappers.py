@@ -134,7 +134,7 @@ class RNNCellBase(nn.Module, Generic[State]):
             state = self._cell.zero_state(batch_size)
         return state
 
-    def forward(self,  # type: ignore
+    def forward(self,
                 input: torch.Tensor, state: Optional[State] = None) \
             -> Tuple[torch.Tensor, State]:
         r"""
@@ -153,7 +153,7 @@ class BuiltinCellWrapper(RNNCellBase[State]):
     RNN cells.
     """
 
-    def forward(self,  # type: ignore
+    def forward(self,
                 input: torch.Tensor, state: Optional[State] = None) \
             -> Tuple[torch.Tensor, State]:
         if state is None:
@@ -203,7 +203,7 @@ class LSTMCell(BuiltinCellWrapper[LSTMState]):
             batch_size, self.hidden_size, requires_grad=False)
         return state, state
 
-    def forward(self,  # type: ignore
+    def forward(self,
                 input: torch.Tensor, state: Optional[LSTMState] = None) \
             -> Tuple[torch.Tensor, LSTMState]:
         if state is None:
@@ -291,7 +291,7 @@ class DropoutWrapper(RNNCellBase[State]):
             return tensor.mul(mask).mul(1.0 / keep_prob)
         return F.dropout(tensor, 1.0 - keep_prob, self.training)
 
-    def forward(self,  # type: ignore
+    def forward(self,
                 input: torch.Tensor, state: Optional[State] = None) \
             -> Tuple[torch.Tensor, State]:
         if self.training and self._variational_recurrent:
@@ -330,7 +330,7 @@ class DropoutWrapper(RNNCellBase[State]):
 class ResidualWrapper(RNNCellBase[State]):
     r"""RNNCell wrapper that ensures cell inputs are added to the outputs."""
 
-    def forward(self,  # type: ignore
+    def forward(self,
                 input: torch.Tensor, state: Optional[State] = None) \
             -> Tuple[torch.Tensor, State]:
         output, new_state = super().forward(input, state)
@@ -368,7 +368,7 @@ class HighwayWrapper(RNNCellBase[State]):
             if not couple_carry_transform_gates:
                 nn.init.constant_(self.transform.bias, -carry_bias_init)
 
-    def forward(self,  # type: ignore
+    def forward(self,
                 input: torch.Tensor, state: Optional[State] = None) \
             -> Tuple[torch.Tensor, State]:
         output, new_state = super().forward(input, state)
@@ -424,7 +424,7 @@ class MultiRNNCell(RNNCellBase[List[State]]):
         states = [cell.zero_state(batch_size) for cell in self._cell]
         return states
 
-    def forward(self,  # type: ignore
+    def forward(self,
                 input: torch.Tensor,
                 state: Optional[List[State]] = None) \
             -> Tuple[torch.Tensor, List[State]]:

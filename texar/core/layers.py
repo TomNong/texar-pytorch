@@ -520,7 +520,7 @@ class _ReducePool1d(nn.Module):
         super().__init__()
         self._reduce_function = reduce_function
 
-    def forward(self, input: Tuple) -> torch.Tensor:  # type: ignore
+    def forward(self, input: Tuple) -> torch.Tensor:
         # if check is required because
         # :torch_docs:`torch.mean <torch.html#torch.mean>`
         # does not return a tuple
@@ -658,7 +658,7 @@ class MergeLayer(nn.Module):
                 else:
                     self._layers.append(get_layer(hparams=layer))
 
-    def forward(self, input: torch.Tensor) -> torch.Tensor:  # type: ignore
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
         r"""Feed input to every containing layer and merge the outputs.
 
         Args:
@@ -713,14 +713,14 @@ class MergeLayer(nn.Module):
 class Flatten(nn.Module):
     r"""Flatten layer to flatten a tensor after convolution."""
 
-    def forward(self, input: torch.Tensor) -> torch.Tensor:  # type: ignore
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
         return input.view(input.size()[0], -1)
 
 
 class Identity(nn.Module):
     r"""Identity activation layer."""
 
-    def forward(self, input: torch.Tensor) -> torch.Tensor:  # type: ignore
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
         return input
 
 

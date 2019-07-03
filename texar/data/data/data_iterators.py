@@ -316,7 +316,7 @@ class DynamicBatchSampler(torch_sampler.BatchSampler, Generic[Example]):
         self.sampler = sampler
         self.strategy = strategy
 
-    def __iter__(self) -> Union[Iterator[List[int]],  # type: ignore
+    def __iter__(self) -> Union[Iterator[List[int]],
                                 Iterator[List[Tuple[int, Example]]]]:
         batch = []  # type: ignore
         self.strategy.reset_batch()
